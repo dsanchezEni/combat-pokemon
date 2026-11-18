@@ -1,0 +1,192 @@
+= Étape 6 — Journal de combat, fin de partie et rejouabilité
+:toc: left
+
+Niveau : Bac+2 — Durée indicative : 1h30
+
+== Objectifs pédagogiques
+
+* Alimenter un **journal** (liste qui grandit) avec `appendChild`.
+* Centraliser la détection de fin de partie dans une fonction `verifierFin()`.
+* Réinitialiser proprement l'état pour **rejouer** (fonction `reset`).
+* Jouer une animation CSS en la « relançant » (`void element.offsetWidth`).
+
+== Notions du cours mobilisées
+
+`appendChild` répété → `scrollTop = scrollHeight` (scroll automatique) → `hidden` → réinitialisation d'état → `classList.remove/add` + reflow pour relancer une animation CSS.
+
+== Énoncé pas à pas
+
+=== 1. Le HTML : journal + écran de fin
+
+Dans la section `#combat`, ajoutez :
+
+[source,html]
+----
+      <h3>Journal du combat</h3>
+      <ul id="journal"></ul>
+
+      <div id="fin-combat" hidden>
+        <p id="message-victoire"></p>
+        <button id="bouton-rejouer">Rejouer avec les mêmes Pokémon</button>
+        <button id="bouton-changer">Changer de Pokémon</button>
+      </div>
+----
+
+=== 2. Le journal dans `js/ui.js`
+
+[source,javascript]
+----
+function ajouterJournal(message) {
+  const journal = document.querySelector('#journal');
+  const li = document.createElement('li');
+  li.textContent = message;
+  journal.appendChild(li);
+  journal.scrollTop = journal.scrollHeight; // scrolle en bas automatiquement
+}
+----
+
+`scrollTop = scrollHeight` force le conteneur à scroller jusqu'en bas pour voir le dernier message.
+
+=== 3. `verifierFin()` et `afficherFin()` dans `js/main.js` / `js/ui.js`
+
+On regroupe la détection de victoire/défaite dans une fonction appelée **après chaque attaque** :
+
+[source,javascript]
+----
+function verifierFin() {
+  if (combat.adversaire.pv <= 0) {
+    combat.termine = true;
+    afficherFin(`Victoire ! ${combat.joueur.pokemon.name.fr} a battu ${combat.adversaire.pokemon.name.fr} !`);
+    return true;
+  }
+  if (combat.joueur.pv <= 0) {
+    combat.termine = true;
+    afficherFin(`Défaite... ${combat.adversaire.pokemon.name.fr} a battu ${combat.joueur.pokemon.name.fr}.`);
+    return true;
+  }
+  return false;
+}
+----
+
+[source,javascript]
+----
+// ui.js
+function afficherFin(message) {
+  document.querySelector('#message-victoire').textContent = message;
+  document.querySelector('#fin-combat').hidden = false;
+  document.querySelector('#bouton-attaquer').disabled = true;
+}
+----
+
+`tourDuJoueur()` devient :
+
+[source,javascript]
+----
+function tourDuJoueur() {
+  if (!combat || combat.termine) return;
+
+  const bouton = document.querySelector('#bouton-attaquer');
+  bouton.disabled = true;
+
+  const messageJoueur = attaquer(combat.joueur, combat.adversaire);
+  ajouterJournal(messageJoueur);
+  animerTouche(document.querySelector('#combat-adversaire'));
+  mettreAJourPv(document.querySelector('#combat-adversaire'), combat.adversaire);
+
+  if (verifierFin()) return;
+
+  setTimeout(() => {
+    if (combat.termine) return;
+    const messageAdversaire = attaquer(combat.adversaire, combat.joueur);
+    ajouterJournal(messageAdversaire);
+    animerTouche(document.querySelector('#combat-joueur'));
+    mettreAJourPv(document.querySelector('#combat-joueur'), combat.joueur);
+
+    if (!verifierFin()) {
+      bouton.disabled = false;
+    }
+  }, 800);
+}
+----
+
+=== 4. Rejouer / changer de Pokémon
+
+`lancerCombat()` fait maintenant aussi le **reset de l'affichage** (journal vide, écran de fin caché, bouton réactivé) : ainsi, « Rejouer » n'est qu'un appel à `lancerCombat()` avec les mêmes `combattants` (leurs PV sont recréés à fond par `creerCombattant`).
+
+[source,javascript]
+----
+function lancerCombat() {
+  combat = {
+    joueur: creerCombattant(combattants.joueur),
+    adversaire: creerCombattant(combattants.adversaire),
+    termine: false,
+  };
+
+  document.querySelector('#journal').innerHTML = '';
+  document.querySelector('#fin-combat').hidden = true;
+  const bouton = document.querySelector('#bouton-attaquer');
+  bouton.disabled = false;
+  bouton.textContent = 'Attaquer !';
+
+  document.querySelector('#combat').hidden = false;
+  remplirCombattant(document.querySelector('#combat-joueur'), combat.joueur);
+  remplirCombattant(document.querySelector('#combat-adversaire'), combat.adversaire);
+
+  ajouterJournal(`Le combat commence : ${combat.joueur.pokemon.name.fr} contre ${combat.adversaire.pokemon.name.fr} !`);
+  document.querySelector('#combat').scrollIntoView({ behavior: 'smooth' });
+}
+
+function changerDePokemon() {
+  combat = null;
+  combattants.joueur = null;
+  combattants.adversaire = null;
+  document.querySelector('#combat').hidden = true;
+  afficherArene();
+  document.querySelector('#arene').scrollIntoView({ behavior: 'smooth' });
+}
+----
+
+=== 5. L'animation « touché »
+
+CSS :
+
+[source,css]
+----
+.combattant.touche { animation: secousse 0.3s; }
+@keyframes secousse {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-6px); }
+  75%      { transform: translateX(6px); }
+}
+----
+
+JS : pour relancer l'animation si la classe est déjà là, on force le **reflow** :
+
+[source,javascript]
+----
+function animerTouche(slot) {
+  slot.classList.remove('touche');
+  void slot.offsetWidth;   // force le navigateur à recalculer -> l'animation repart
+  slot.classList.add('touche');
+}
+----
+
+== Résultat attendu
+
+Le combat se déroule avec un journal qui se remplit à chaque attaque, une secousse sur le Pokémon touché, puis un encadré jaune « Victoire ! … » ou « Défaite… » avec deux boutons permettant de rejouer ou de choisir d'autres Pokémon.
+
+== Questions de compréhension
+
+1. Pourquoi faut-il vider `#journal` (`innerHTML = ''`) au début de `lancerCombat()` ?
+2. Que se passe-t-il si on clique « Attaquer ! » pendant la riposte adverse ? Pourquoi ?
+3. À quoi sert `void slot.offsetWidth` ?
+
+== Pour aller plus loin (Bac+4)
+
+* Comptez et affichez le **nombre de tours** et les dégâts moyens.
+* Sauvegardez le **score** (victoires/défaites) dans `localStorage` et affichez-le dans le header.
+* Ajoutez un bouton « Attaque spéciale » utilisable une seule fois par combat (compteur dans l'état).
+
+== Code complet
+
+Voir `solutions/etape-06/`.

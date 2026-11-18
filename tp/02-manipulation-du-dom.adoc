@@ -1,0 +1,166 @@
+= Étape 2 — Manipulation du DOM : des cartes Pokémon
+:toc: left
+
+Niveau : Bac+2 — Durée indicative : 1h30
+
+== Objectifs pédagogiques
+
+* Créer des éléments HTML en JavaScript (`createElement`, `classList`, attributs `src`/`alt`).
+* Comprendre la notion de **fonction fabrique** qui retourne un élément prêt à l'emploi.
+* Structurer l'affichage avec une grille CSS (`display: grid`).
+
+== Notions du cours mobilisées
+
+`document.createElement` → `classList.add` → attributs (`img.src`, `img.alt`) → `appendChild` → fonction fabrique → CSS Grid.
+
+== Énoncé pas à pas
+
+À l'étape 1, on affichait du texte brut dans une liste. Ici, on transforme chaque Pokémon en une **carte** : image, numéro, nom et badges de types.
+
+=== 1. Modifier `index.html`
+
+On remplace la `<ul>` par une `<div>` qui contiendra les cartes :
+
+[source,html]
+----
+    <p id="chargement">Chargement des Pokémon en cours...</p>
+    <div id="liste-pokemon" class="cartes"></div>
+----
+
+=== 2. Écrire la fonction fabrique dans `js/main.js`
+
+Le cœur de l'étape : une fonction `creerCartePokemon(pokemon)` qui construit toute la carte et la retourne. `main()` n'a plus qu'à faire `conteneur.appendChild(creerCartePokemon(pokemon))`.
+
+[source,javascript]
+----
+async function main() {
+  const chargement = document.querySelector('#chargement');
+  const conteneur = document.querySelector('#liste-pokemon');
+
+  try {
+    const pokemons = await getPokemonsGeneration1();
+    chargement.textContent = `${pokemons.length} Pokémon chargés !`;
+
+    for (const pokemon of pokemons) {
+      conteneur.appendChild(creerCartePokemon(pokemon));
+    }
+  } catch (erreur) {
+    chargement.textContent = "Impossible de charger les Pokémon. Vérifiez votre connexion.";
+    console.error(erreur);
+  }
+}
+
+/**
+ * Fabrique une carte (élément HTML) pour un Pokémon.
+ * @param {Object} pokemon un Pokémon renvoyé par l'API
+ * @returns {HTMLElement} la carte prête à être ajoutée au DOM
+ */
+function creerCartePokemon(pokemon) {
+  // Carte racine
+  const carte = document.createElement('article');
+  carte.classList.add('carte');
+
+  // Image du Pokémon (sprite "regular" fourni par l'API)
+  const image = document.createElement('img');
+  image.src = pokemon.sprites.regular;
+  image.alt = `Sprite de ${pokemon.name.fr}`;
+  carte.appendChild(image);
+
+  // Numéro dans le Pokédex
+  const numero = document.createElement('p');
+  numero.classList.add('numero');
+  numero.textContent = `N°${pokemon.pokedex_id}`;
+  carte.appendChild(numero);
+
+  // Nom français
+  const nom = document.createElement('h3');
+  nom.classList.add('nom');
+  nom.textContent = pokemon.name.fr;
+  carte.appendChild(nom);
+
+  // Liste des types (un Pokémon peut en avoir 1 ou 2)
+  const listeTypes = document.createElement('ul');
+  listeTypes.classList.add('types');
+  for (const type of pokemon.types) {
+    const li = document.createElement('li');
+    li.textContent = type.name;
+    listeTypes.appendChild(li);
+  }
+  carte.appendChild(listeTypes);
+
+  return carte;
+}
+
+main();
+----
+
+Points clés :
+
+* `carte.classList.add('carte')` ajoute la classe CSS `carte` à l'élément : c'est le **pont entre le JS et le CSS**.
+* `image.src = ...` et `image.alt = ...` définissent des **attributs HTML** comme si on écrivait `<img src="..." alt="...">`.
+* `pokemon.types` est un tableau d'objets `{ name, image }` : on le parcourt avec `for...of`.
+* La fonction **retourne** la carte (`return carte`) : c'est le pattern « fabrique » (factory), très utilisé pour construire du DOM.
+
+=== 3. Le CSS de la grille (`css/style.css`)
+
+[source,css]
+----
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.carte {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.carte img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.types {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+
+.types li {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3350d;
+  color: #fff;
+}
+----
+
+`display: grid` + `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))` crée une grille **responsive** : autant de colonnes de 160 px minimum que possible, qui passent à la ligne automatiquement.
+
+== Résultat attendu
+
+Une grille de 151 cartes blanches, chacune avec le sprite, le numéro, le nom en gras et un (ou deux) badge(s) de type rouge.
+
+== Questions de compréhension
+
+1. Que se passe-t-il si on oublie `return carte` à la fin de la fabrique ?
+2. Pourquoi `classList.add('carte')` et pas `carte.className = 'carte'` ?
+3. Que renvoie `pokemon.types` pour un Pokémon qui a deux types ? Comment l'afficher différemment selon le nombre de types ?
+
+== Pour aller plus loin (Bac+4)
+
+* Donnez une couleur de badge différente **par type** (dictionnaire `const COULEURS_TYPES = { 'Plante': '#78c850', ... }`).
+* Ajoutez `carte.style.cursor = 'pointer'` et un effet `:hover` en CSS (prépare l'étape 3).
+* Utilisez `loading="lazy"` sur les images (`image.loading = 'lazy'`) et observez l'onglet Network : les images se chargent au fur et à mesure du scroll.
+
+== Code complet
+
+Voir `solutions/etape-02/`.

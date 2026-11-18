@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat Pokémon - Étape 3 : recherche, filtres et fiche détaillée</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Combat Pokémon</h1>
+    <p class="credit">Données fournies par l'API <a href="https://tyradex.app" target="_blank" rel="noopener">Tyradex</a></p>
+  </header>
+
+  <main>
+    <h2>Pokédex de la génération 1</h2>
+
+    <!-- Barre d'outils : recherche + filtre par type -->
+    <div class="outils">
+      <input type="search" id="recherche" placeholder="Rechercher un Pokémon..." aria-label="Rechercher un Pokémon">
+      <select id="filtre-type" aria-label="Filtrer par type">
+        <option value="">Tous les types</option>
+      </select>
+    </div>
+
+    <p id="chargement">Chargement des Pokémon en cours...</p>
+    <p id="aucun-resultat" hidden>Aucun Pokémon ne correspond à votre recherche.</p>
+    <div id="liste-pokemon" class="cartes"></div>
+  </main>
+
+  <!-- Fiche détaillée affichée au clic sur une carte -->
+  <div id="modale" class="modale" hidden>
+    <div class="modale-contenu">
+      <button id="fermer-modale" class="fermer" aria-label="Fermer">&times;</button>
+      <div id="fiche-detail"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

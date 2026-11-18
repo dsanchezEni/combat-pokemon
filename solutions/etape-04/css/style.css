@@ -1,0 +1,267 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f2f4f8;
+  color: #222;
+}
+
+header {
+  background-color: #e3350d;
+  color: #fff;
+  padding: 16px 24px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+.credit {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+
+.credit a {
+  color: #ffd23f;
+}
+
+main {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.indice {
+  background: #fff8d6;
+  border-left: 4px solid #ffd23f;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+#chargement {
+  font-style: italic;
+  color: #666;
+}
+
+#aucun-resultat {
+  color: #e3350d;
+  font-weight: bold;
+}
+
+/* Barre d'outils */
+.outils {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.outils input,
+.outils select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.outils input {
+  flex: 1;
+}
+
+/* Grille de cartes */
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.carte {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s;
+}
+
+.carte:hover {
+  transform: scale(1.04);
+}
+
+.carte img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.carte .numero {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.carte .nom {
+  margin: 4px 0;
+  font-size: 1.05rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.types {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+
+.types li {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3350d;
+  color: #fff;
+}
+
+.carte button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2a75bb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.carte button:hover {
+  background: #1f5a94;
+}
+
+/* Arène */
+#arene {
+  margin-top: 32px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.combattants {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.combattant {
+  min-width: 180px;
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.combattant.rempli {
+  border-style: solid;
+  border-color: #2a75bb;
+}
+
+.combattant img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.combattant .vide {
+  color: #999;
+  font-style: italic;
+}
+
+.vs {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #e3350d;
+}
+
+#bouton-combat {
+  margin-top: 16px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 10px;
+  background: #e3350d;
+  color: #fff;
+  cursor: pointer;
+}
+
+#bouton-combat:disabled {
+  background: #bbb;
+  cursor: not-allowed;
+}
+
+/* Modale (fiche détaillée) */
+.modale {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modale[hidden] {
+  display: none;
+}
+
+.modale-contenu {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.fermer {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  border: none;
+  background: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+
+.fiche {
+  text-align: center;
+}
+
+.fiche img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+}
+
+.fiche .categorie {
+  color: #777;
+  font-style: italic;
+  margin: 0 0 12px;
+}
+
+.stats {
+  text-align: left;
+  margin-top: 12px;
+}
+
+.stats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid #eee;
+  list-style: none;
+}

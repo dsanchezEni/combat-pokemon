@@ -1,0 +1,126 @@
+= Étape 4 — Gestion d'état : choisir ses deux combattants
+:toc: left
+
+Niveau : Bac+2 — Durée indicative : 1h30
+
+== Objectifs pédagogiques
+
+* Modéliser l'**état** de l'application dans des variables/objets.
+* Gérer un bouton avec l'attribut `disabled`.
+* Comprendre `event.stopPropagation()` pour séparer deux clics sur le même élément.
+* Préparer l'arène de combat dans le HTML.
+
+== Notions du cours mobilisées
+
+État global → `disabled` → `stopPropagation` → `dataset` → mise à jour partielle du DOM (on ne redessine que les slots).
+
+== Énoncé pas à pas
+
+=== 1. Le HTML de l'arène de sélection
+
+Ajoutez une section `#arene` après le Pokédex (dans `index.html`) :
+
+[source,html]
+----
+    <section id="arene" hidden>
+      <h2>Arène de combat</h2>
+      <div class="combattants">
+        <div class="combattant" id="slot-joueur"></div>
+        <div class="vs">VS</div>
+        <div class="combattant" id="slot-adversaire"></div>
+      </div>
+      <button id="bouton-combat" disabled>Lancer le combat !</button>
+    </section>
+----
+
+Règle du jeu pour ce TP : **le 1er Pokémon « choisi » est le vôtre, le 2e est l'adversaire**. Si les deux slots sont déjà remplis, un nouveau choix remplace le vôtre.
+
+=== 2. Un bouton « Choisir » sur chaque carte (`js/ui.js`)
+
+Dans `creerCartePokemon`, on ajoute un bouton. Le clic sur le bouton ne doit **pas** ouvrir la fiche détaillée (qui est déclenchée par le clic sur la carte) : on bloque la propagation avec `stopPropagation()`.
+
+[source,javascript]
+----
+  // Bouton « Choisir » : stopPropagation pour ne PAS ouvrir la fiche
+  const bouton = document.createElement('button');
+  bouton.textContent = 'Choisir';
+  bouton.addEventListener('click', (event) => {
+    event.stopPropagation();           // le clic ne remonte pas jusqu'à la carte
+    onClicChoisir(pokemon);
+  });
+  carte.appendChild(bouton);
+
+  carte.addEventListener('click', () => onClicCarte(pokemon));
+----
+
+La fabrique prend maintenant trois paramètres : `creerCartePokemon(pokemon, onClicCarte, onClicChoisir)` — des **callbacks** (fonctions passées en argument).
+
+=== 3. L'état des combattants et la mise à jour de l'arène (`js/main.js`)
+
+[source,javascript]
+----
+const combattants = { joueur: null, adversaire: null };
+
+function choisirPokemon(pokemon) {
+  if (!combattants.joueur) combattants.joueur = pokemon;
+  else if (!combattants.adversaire) combattants.adversaire = pokemon;
+  else combattants.joueur = pokemon; // les deux slots sont pleins : on remplace le joueur
+  afficherArene();
+}
+
+function afficherArene() {
+  document.querySelector('#arene').hidden = false;
+  remplirSlot(document.querySelector('#slot-joueur'), combattants.joueur);
+  remplirSlot(document.querySelector('#slot-adversaire'), combattants.adversaire);
+  document.querySelector('#bouton-combat').disabled =
+    !(combattants.joueur && combattants.adversaire);
+}
+----
+
+Et dans `afficherPokemons()`, on passe le vrai callback :
+
+[source,javascript]
+----
+    conteneur.appendChild(
+      creerCartePokemon(pokemon, () => {}, choisirPokemon)
+    );
+----
+
+(Le clic sur la carte est géré par délégation dans `main`, donc le callback direct reste vide ici.)
+
+`remplirSlot(slot, pokemon)` (dans `js/ui.js`) construit le contenu d'un slot : titre « Votre Pokémon » / « Adversaire », puis soit un placeholder « Aucun Pokémon choisi », soit le nom + l'image du Pokémon, avec la classe `rempli` pour changer la bordure.
+
+=== 4. Le bouton « Lancer le combat ! »
+
+Pour l'instant, il affiche juste une alerte (le vrai combat arrive à l'étape 5) :
+
+[source,javascript]
+----
+  document.querySelector('#bouton-combat').addEventListener('click', () => {
+    alert(`Le combat ${combattants.joueur.name.fr} vs ${combattants.adversaire.name.fr} arrive à l'étape 5 !`);
+  });
+----
+
+Le bouton est `disabled` tant qu'on n'a pas choisi deux Pokémon : un clic sur un bouton désactivé ne déclenche aucun événement.
+
+== Résultat attendu
+
+* Cliquez sur « Choisir » de Salamèche → le slot « Votre Pokémon » se remplit.
+* Cliquez sur « Choisir » de Carapuce → le slot « Adversaire » se remplit et le bouton « Lancer le combat ! » devient rouge/actif.
+* Un troisième choix remplace votre Pokémon.
+
+== Questions de compréhension
+
+1. Pourquoi stocke-t-on `joueur` et `adversaire` dans un objet plutôt que dans deux variables séparées ?
+2. Que se passe-t-il si on clique sur « Choisir » sans avoir cliqué sur une carte ?
+3. Pourquoi `disabled = !(a && b)` active-t-il le bouton uniquement quand les deux sont choisis ?
+
+== Pour aller plus loin (Bac+4)
+
+* Ajoutez un bouton « Adversaire aléatoire » qui choisit un Pokémon au hasard (`Math.floor(Math.random() * pokemonsCharges.length)`).
+* Interdisez de choisir **le même Pokémon** pour les deux slots.
+* Affichez un aperçu des stats (PV/ATK/DEF) dans chaque slot dès la sélection.
+
+== Code complet
+
+Voir `solutions/etape-04/`.

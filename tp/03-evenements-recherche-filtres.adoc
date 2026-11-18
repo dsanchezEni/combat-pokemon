@@ -1,0 +1,241 @@
+= Étape 3 — Les événements : recherche, filtres et fiche détaillée
+:toc: left
+
+Niveau : Bac+2 — Durée indicative : 2h
+
+== Objectifs pédagogiques
+
+* Comprendre le mécanisme des **événements** du navigateur (`addEventListener`).
+* Réagir à la saisie (`input`) et au changement d'un `<select>` (`change`).
+* Filtrer un tableau de données en mémoire et **ré-afficher** la liste (re-render).
+* Délégation d'événements (`event.target.closest`) et `stopPropagation`.
+* Ouvrir/fermer une **modale** et afficher une fiche détaillée récupérée à la volée.
+
+== Notions du cours mobilisées
+
+`addEventListener` → objet `event` → `event.target` → `closest()` → `filter` sur un tableau → `Set` pour dédoublonner → `innerHTML` avec template literal → attribut `hidden`.
+
+== Énoncé pas à pas
+
+=== 1. Nouveauté d'architecture : séparer l'affichage dans `js/ui.js`
+
+Le fichier `main.js` grossit : on déplace toutes les fonctions qui fabriquent du HTML dans `js/ui.js`. `main.js` contiendra alors uniquement l'**état** (les variables) et les **écouteurs d'événements**.
+
+Dans `index.html`, ajoutez le script (avant `main.js`) :
+
+[source,html]
+----
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+----
+
+=== 2. Le HTML : barre d'outils + modale
+
+[source,html]
+----
+    <!-- Barre d'outils : recherche + filtre par type -->
+    <div class="outils">
+      <input type="search" id="recherche" placeholder="Rechercher un Pokémon..."
+             aria-label="Rechercher un Pokémon">
+      <select id="filtre-type" aria-label="Filtrer par type">
+        <option value="">Tous les types</option>
+      </select>
+    </div>
+
+    <p id="chargement">Chargement des Pokémon en cours...</p>
+    <p id="aucun-resultat" hidden>Aucun Pokémon ne correspond à votre recherche.</p>
+    <div id="liste-pokemon" class="cartes"></div>
+----
+
+Et à la fin du `<body>`, la modale (cachée grâce à l'attribut `hidden`) :
+
+[source,html]
+----
+  <div id="modale" class="modale" hidden>
+    <div class="modale-contenu">
+      <button id="fermer-modale" class="fermer" aria-label="Fermer">&times;</button>
+      <div id="fiche-detail"></div>
+    </div>
+  </div>
+----
+
+L'attribut `hidden` est natif en HTML : l'élément n'est pas affiché. En CSS, on ajoute `.modale[hidden] { display: none; }` car `display: flex` de la classe `.modale` aurait sinon la priorité sur `hidden`.
+
+=== 3. Un nouvel appel API : la fiche détaillée
+
+Dans `js/api.js`, ajoutez :
+
+[source,javascript]
+----
+/**
+ * Récupère la fiche détaillée d'un Pokémon (stats, talents, résistances...).
+ * GET https://tyradex.app/api/v1/pokemon/{id}
+ */
+async function getPokemon(id) {
+  const reponse = await fetch(`${API_BASE}/pokemon/${id}`);
+  const donnees = await reponse.json();
+  return donnees;
+}
+----
+
+=== 4. L'état et le re-render dans `js/main.js`
+
+On introduit trois variables d'état et une fonction `afficherPokemons()` qui **efface puis redessine** la liste à chaque changement :
+
+[source,javascript]
+----
+// ---- État de l'application (les données en mémoire) ----
+let pokemonsCharges = [];   // tous les Pokémon de la génération 1
+let filtreNom = '';          // texte tapé dans la recherche
+let filtreType = '';         // type sélectionné dans le <select>
+
+async function main() {
+  const chargement = document.querySelector('#chargement');
+
+  try {
+    pokemonsCharges = await getPokemonsGeneration1();
+    chargement.textContent = `${pokemonsCharges.length} Pokémon chargés !`;
+  } catch (erreur) {
+    chargement.textContent = "Impossible de charger les Pokémon. Vérifiez votre connexion.";
+    console.error(erreur);
+    return; // on s'arrête si l'API est indisponible
+  }
+
+  // Remplissage du filtre par type à partir des données reçues
+  remplirSelectTypes(document.querySelector('#filtre-type'), pokemonsCharges);
+
+  // ---- Événements ----
+  document.querySelector('#recherche').addEventListener('input', (event) => {
+    filtreNom = event.target.value.toLowerCase();
+    afficherPokemons();
+  });
+
+  document.querySelector('#filtre-type').addEventListener('change', (event) => {
+    filtreType = event.target.value;
+    afficherPokemons();
+  });
+
+  // ... (modale, voir étape suivante)
+
+  afficherPokemons();
+}
+
+/**
+ * (Re)dessine la liste des cartes en appliquant les filtres actuels.
+ */
+function afficherPokemons() {
+  const conteneur = document.querySelector('#liste-pokemon');
+  conteneur.innerHTML = ''; // on vide avant de redessiner
+
+  const filtres = pokemonsCharges.filter((pokemon) => {
+    const nomOk = pokemon.name.fr.toLowerCase().includes(filtreNom);
+    const typeOk = filtreType === '' || pokemon.types.some((t) => t.name === filtreType);
+    return nomOk && typeOk;
+  });
+
+  document.querySelector('#aucun-resultat').hidden = filtres.length > 0;
+
+  for (const pokemon of filtres) {
+    conteneur.appendChild(creerCartePokemon(pokemon, () => {}));
+  }
+}
+
+main();
+----
+
+Points clés :
+
+* L'événement **`input`** se déclenche à **chaque frappe** dans le champ (pas besoin d'appuyer sur Entrée).
+* `event.target` est l'élément qui a déclenché l'événement (ici le `<input>`) ; `event.target.value` est le texte saisi.
+* `filter(...)` renvoie un **nouveau tableau** avec uniquement les éléments qui passent le test. Ici deux conditions combinées avec `&&`.
+* `pokemon.types.some((t) => t.name === filtreType)` : `some` renvoie `true` si **au moins un** type correspond.
+* `conteneur.innerHTML = ''` vide le conteneur d'un coup (plus rapide que de supprimer les enfants un par un).
+* `hidden = true/false` sur `#aucun-resultat` affiche ou masque le message « Aucun résultat ».
+
+=== 5. Remplir le `<select>` des types (`js/ui.js`)
+
+On déduit la liste des types des Pokémon déjà chargés, avec un `Set` pour éviter les doublons :
+
+[source,javascript]
+----
+function remplirSelectTypes(select, pokemons) {
+  const types = new Set();
+  for (const pokemon of pokemons) {
+    for (const type of pokemon.types) {
+      types.add(type.name);
+    }
+  }
+  // Tri alphabétique pour un affichage propre
+  for (const nomType of [...types].sort()) {
+    const option = document.createElement('option');
+    option.value = nomType;
+    option.textContent = nomType;
+    select.appendChild(option);
+  }
+}
+----
+
+`[...types]` transforme le `Set` en tableau (spread operator) pour pouvoir le trier avec `.sort()`.
+
+=== 6. La fiche détaillée au clic (délégation d'événements + modale)
+
+Plutôt qu'un écouteur par carte (151 écouteurs !), on en met **un seul** sur le conteneur : c'est la **délégation d'événements**.
+
+[source,javascript]
+----
+  // Clic sur une carte -> fiche détaillée dans la modale
+  document.querySelector('#liste-pokemon').addEventListener('click', async (event) => {
+    const carte = event.target.closest('.carte');
+    if (!carte) return;
+    const fiche = await getPokemon(carte.dataset.pokedexId);
+    const modale = document.querySelector('#modale');
+    const conteneur = document.querySelector('#fiche-detail');
+    conteneur.innerHTML = ''; // on vide l'ancienne fiche
+    conteneur.appendChild(creerFicheDetaillee(fiche));
+    modale.hidden = false;
+  });
+
+  // Fermeture de la modale (bouton × ou clic sur le fond)
+  document.querySelector('#fermer-modale').addEventListener('click', () => {
+    document.querySelector('#modale').hidden = true;
+  });
+  document.querySelector('#modale').addEventListener('click', (event) => {
+    if (event.target.id === 'modale') {
+      event.target.hidden = true;
+    }
+  });
+----
+
+* `event.target.closest('.carte')` remonte dans le DOM depuis l'élément cliqué (peut-être un `<img>` ou un `<h3>`) jusqu'à la carte `.carte` qui l'englobe.
+* `carte.dataset.pokedexId` lit l'attribut `data-pokedex-id` : on l'avait stocké sur la carte avec `carte.dataset.pokedexId = pokemon.pokedex_id;` dans `creerCartePokemon`. Les `data-*` servent à **stocker des données personnalisées sur un élément HTML**.
+* La fiche détaillée est construite avec `innerHTML` et un **template literal** multi-lignes dans `creerFicheDetaillee(pokemon)` (voir `solutions/etape-03/js/ui.js`) : on y insère les stats avec `${pokemon.stats.hp}` etc., et on génère la liste des types avec `pokemon.types.map(t => `<li>${t.name}</li>`).join('')`.
+
+.Attention à innerHTML
+====
+`innerHTML` interprète le HTML contenu dans la chaîne. Avec des données venant d'une API de confiance (Tyradex) et sans saisie utilisateur, c'est acceptable pour ce TP. En production, on préférera `createElement` + `textContent` pour éviter les injections XSS.
+====
+
+== Résultat attendu
+
+* Tapez « pik » dans la recherche → seules les cartes correspondantes restent.
+* Choisissez « Eau » dans le select → seuls les Pokémon de type Eau s'affichent.
+* Cliquez sur une carte → une modale s'ouvre avec la fiche détaillée (stats, taille, poids, talent).
+
+== Questions de compréhension
+
+1. Quelle différence entre les événements `input`, `change` et `click` ?
+2. Pourquoi un seul écouteur sur `#liste-pokemon` suffit-il pour 151 cartes ?
+3. Que se passe-t-il si on clique entre deux cartes (sur le fond de la grille) ?
+4. Pourquoi `filtreNom` est-il passé en minuscules, et `pokemon.name.fr` aussi ?
+
+== Pour aller plus loin (Bac+4)
+
+* Ajoutez un **debounce** sur la recherche (voir étape 7) pour ne filtrer que 250 ms après la dernière frappe.
+* Filtrez aussi sur le **nom anglais** (`name.en`) en plus du nom français.
+* Ajoutez un tri (par numéro, par PV, par attaque) avec un troisième `<select>`.
+* Rendez la modale fermable avec la touche `Échap` (événement `keydown` sur `document`).
+
+== Code complet
+
+Voir `solutions/etape-03/`.

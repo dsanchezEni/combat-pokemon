@@ -1,0 +1,77 @@
+= TP fil rouge « Combat Pokémon » — Parcours pédagogique
+:toc: left
+
+== Principe
+
+Un projet unique, construit **étape par étape**, qui accompagne un cours de
+JavaScript autour de trois piliers : la **manipulation du DOM**, les
+**événements** et les **appels d'API** (`fetch`). Les données proviennent de
+l'API gratuite et française https://tyradex.app/docs[Tyradex].
+
+Public : étudiants en Bac+2 et Bac+4 informatique. Chaque étape contient des
+objectifs, un énoncé pas à pas, des questions de compréhension et des exercices
+« Pour aller plus loin » (niveau Bac+4).
+
+== Découpage en séances
+
+[cols="1,3,2,1", options="header"]
+|===
+| Étape | Contenu | Compétences visées | Durée
+
+| link:00-introduction.adoc[00 — Introduction]
+| Mise en place de l'environnement (VS Code + Live Server), structure du projet, rappels HTML/CSS.
+| Environnement de dev, structure d'un projet web | 30 min
+
+| link:01-premier-appel-api.adoc[01 — Premier appel API]
+| `fetch`, Promise, `async/await`, `.json()`, affichage d'une liste dans le DOM, `try/catch`.
+| API REST, fetch, async/await, DOM (querySelector, createElement) | 1h30
+
+| link:02-manipulation-du-dom.adoc[02 — Manipulation du DOM]
+| Fonction fabrique, `classList`, attributs (`src`, `alt`), CSS Grid, cartes Pokémon.
+| DOM avancé, fonctions fabriques, CSS Grid | 1h30
+
+| link:03-evenements-recherche-filtres.adoc[03 — Événements]
+| `addEventListener` (`input`, `change`, `click`), délégation d'événements, `filter`, `Set`, modale, fiche détaillée.
+| Événements, délégation, filtrage de données, modale | 2h
+
+| link:04-selection-des-combattants.adoc[04 — Sélection des combattants]
+| État de l'application, `stopPropagation`, bouton `disabled`, callbacks.
+| Gestion d'état, propagation des événements | 1h30
+
+| link:05-le-combat-tour-par-tour.adoc[05 — Le combat]
+| Module de logique, calcul de dégâts (stats, types, aléatoire), barres de PV, `setTimeout`.
+| Logique métier, DOM dynamique, timers, CSS animé | 2h
+
+| link:06-journal-et-fin-de-partie.adoc[06 — Journal et fin de partie]
+| Journal, détection de fin, rejouer, animation CSS relancée.
+| Réinitialisation d'état, animations CSS | 1h30
+
+| link:07-bonus-pour-aller-plus-loin.adoc[07 — Bonus Bac+4]
+| Modules ES6, classe `Combattant`, cache `localStorage`, `reponse.ok`, debounce, bouton « Réessayer ».
+| Modules, POO, stockage local, robustesse | 2h–3h
+|===
+
+Durée totale : environ **10 à 12 h** de TP étalées sur un semestre.
+
+== Ressources
+
+* link:ressources/reference-api-tyradex.adoc[Fiche ressource — API Tyradex] :
+  endpoints, champs utilisés, exemples de JSON, règles d'utilisation.
+* Dossier `solutions/` à la racine du dépôt : le code complet et cumulé de
+  chaque étape (`solutions/etape-01/` … `solutions/etape-07/`), à utiliser
+  comme correction ou à distribuer aux élèves qui décrochent.
+
+== Déroulé conseillé avec un cours
+
+1. **Cours** : rappels JS (tableaux, objets, fonctions) puis présentation de `fetch` et des Promise.
+2. **TP étapes 1–2** : les élèves codent en parallèle du cours, avec la solution en filet de sécurité.
+3. **Cours** : le DOM (sélecteurs, création d'éléments) puis les événements (modèle de propagation, délégation).
+4. **TP étapes 3–4** : recherche/filtres/fiche, puis sélection des combattants.
+5. **TP étapes 5–6** : le combat, laissé plus en autonomie (c'est le moment « s'amuser »).
+6. **TP étape 7** : pour les Bac+4, en autonomie guidée.
+
+== Évaluation proposée
+
+* Fonctionnalités obligatoires (étapes 1 à 6) : /12
+* Qualité du code (noms de variables, commentaires, découpage en fonctions) : /4
+* Bonus étape 7 et/ou améliorations personnelles : /4

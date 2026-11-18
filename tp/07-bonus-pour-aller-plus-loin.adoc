@@ -1,0 +1,173 @@
+= Étape 7 — Bonus (Bac+4) : modules ES6, cache, debounce et gestion d'erreurs
+:toc: left
+
+Niveau : Bac+4 — Durée indicative : 2h à 3h
+
+Cette étape reprend le jeu de l'étape 6 et le fait « passer en production » :
+architecture en **modules ES6**, **cache localStorage** (recommandé par Tyradex),
+**debounce** sur la recherche, **vérification de `reponse.ok`** et bouton « Réessayer »,
+et passage du moteur de combat en **classe**.
+
+== 1. Les modules ES6
+
+On remplace les 4 balises `<script>` par une seule, de type `module` :
+
+[source,html]
+----
+  <script type="module" src="js/main.js"></script>
+----
+
+Chaque fichier exporte ses fonctions avec `export` et `main.js` les importe :
+
+[source,javascript]
+----
+// api.js
+export async function getPokemonsGeneration1() { ... }
+
+// main.js
+import { getPokemonsGeneration1, getPokemon, viderCache } from './api.js';
+import { creerCartePokemon, ... } from './ui.js';
+import { Combattant } from './combat.js';
+----
+
+Avantages : chaque fichier a sa portée (plus de variables globales qui se marchent dessus), l'ordre de chargement est géré par les `import`, et on peut réutiliser un module dans un autre projet.
+
+.Important
+====
+Les modules ES6 ne fonctionnent **qu'avec un serveur HTTP** (Live Server), pas en ouvrant le fichier en `file://`.
+====
+
+== 2. Le cache avec `localStorage`
+
+`localStorage` stocke des chaînes clé/valeur **persistes** dans le navigateur (elles survivent à la fermeture de l'onglet) :
+
+[source,javascript]
+----
+const CLE_CACHE = 'pokedex-gen1-v1';
+
+export async function getPokemonsGeneration1(forcerRechargement = false) {
+  if (!forcerRechargement) {
+    const cache = localStorage.getItem(CLE_CACHE);
+    if (cache) return JSON.parse(cache);   // données déjà vues : on ne rappelle pas l'API
+  }
+
+  const reponse = await fetch(`${API_BASE}/gen/1/pokemon`);
+  if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
+  const donnees = await reponse.json();
+
+  localStorage.setItem(CLE_CACHE, JSON.stringify(donnees)); // on met en cache
+  return donnees;
+}
+
+export function viderCache() {
+  localStorage.removeItem(CLE_CACHE);
+}
+----
+
+Un bouton « Recharger » dans la barre d'outils appelle `viderCache()` puis recharge en forçant l'appel réseau. Testez : rechargez la page, le message « Pokédex chargé depuis le cache localStorage » apparaît dans la console et **aucune requête** n'apparaît dans l'onglet Network.
+
+== 3. Vérifier `reponse.ok` et afficher l'erreur
+
+`fetch` ne lève une erreur que sur un problème réseau ; une réponse HTTP 404 ou 500 est considérée comme « réussie ». Il faut donc tester :
+
+[source,javascript]
+----
+const reponse = await fetch(url);
+if (!reponse.ok) {
+  throw new Error(`Erreur HTTP ${reponse.status} en appelant l'API Tyradex`);
+}
+----
+
+Côté UI, le `catch` de `chargerPokemons()` affiche une zone d'erreur avec un bouton **Réessayer** :
+
+[source,html]
+----
+<div id="erreur" hidden>
+  <span id="message-erreur"></span>
+  <button id="bouton-reessayer">Réessayer</button>
+</div>
+----
+
+Pour tester : coupez le Wi-Fi, rechargez la page (le cache est vide au premier lancement), observez le message d'erreur, puis réactivez le réseau et cliquez sur « Réessayer ».
+
+== 4. Le debounce sur la recherche
+
+Sans debounce, `afficherPokemons()` s'exécute à chaque frappe (151 cartes à re-rendre à chaque lettre). On attend 250 ms après la **dernière** frappe :
+
+[source,javascript]
+----
+let minuteur = null;
+document.querySelector('#recherche').addEventListener('input', (event) => {
+  clearTimeout(minuteur);                    // annule le filtre prévu
+  minuteur = setTimeout(() => {              // en planifie un nouveau
+    filtreNom = event.target.value.toLowerCase();
+    afficherPokemons();
+  }, 250);
+});
+----
+
+== 5. Le moteur de combat en classe
+
+`js/combat.js` devient une **classe** `Combattant` qui encapsule le Pokémon et ses PV :
+
+[source,javascript]
+----
+export class Combattant {
+  constructor(pokemon) {
+    this.pokemon = pokemon;
+    this.pvMax = pokemon.stats.hp;
+    this.pv = pokemon.stats.hp;
+  }
+
+  estEnVie() {
+    return this.pv > 0;
+  }
+
+  multiplicateurTypeContre(defenseur) {
+    const typeAttaque = this.pokemon.types[0].name;
+    const resistance = (defenseur.pokemon.resistances ?? []).find(
+      (r) => r.name === typeAttaque
+    );
+    return resistance ? resistance.multiplier : 1;
+  }
+
+  calculerDegatsContre(defenseur) {
+    const attaque = this.pokemon.stats.atk;
+    const defense = defenseur.pokemon.stats.def || 1;
+    const type = this.multiplicateurTypeContre(defenseur);
+    const aleatoire = 0.85 + Math.random() * 0.15;
+    return Math.max(1, Math.round((attaque / defense) * 10 * type * aleatoire));
+  }
+
+  attaquer(defenseur) {
+    const degats = this.calculerDegatsContre(defenseur);
+    defenseur.pv = Math.max(0, defenseur.pv - degats);
+    const type = this.multiplicateurTypeContre(defenseur);
+    let message = `${this.pokemon.name.fr} attaque ${defenseur.pokemon.name.fr} et inflige ${degats} dégâts !`;
+    if (type > 1) message += " C'est super efficace !";
+    if (type < 1 && type > 0) message += " Ce n'est pas très efficace...";
+    if (!defenseur.estEnVie()) message += ` ${defenseur.pokemon.name.fr} est K.O. !`;
+    return message;
+  }
+}
+----
+
+Utilisation dans `main.js` : `combat.joueur.attaquer(combat.adversaire)`.
+La classe regroupe les données (`pokemon`, `pv`) et les comportements (`attaquer`, `estEnVie`) : c'est le principe d'**encapsulation**.
+
+== 6. Idées d'améliorations supplémentaires
+
+* **Plusieurs attaques** par Pokémon, avec une attaque spéciale à dégâts élevés utilisable 1 fois.
+* **Priorité de vitesse** : le plus rapide (`stats.vit`) attaque en premier à chaque tour.
+* **Score persistant** : victoires/défaites dans `localStorage`, affiché dans le header.
+* **Accessibilité** : navigation au clavier dans la modale, `aria-live="polite"` sur le journal pour les lecteurs d'écran, textes alternatifs explicites.
+* **Dark mode** avec `prefers-color-scheme` en CSS.
+* **Tests** : écrire quelques fonctions pures (ex : `calculerDegats`) testables avec un framework comme Vitest.
+
+== Résultat attendu
+
+Le jeu fonctionne comme à l'étape 6, mais : rechargé depuis le cache au 2e lancement, recherche fluide (debounce), message d'erreur propre + « Réessayer » si l'API est coupée, code organisé en modules avec une classe `Combattant`.
+
+== Code complet
+
+Voir `solutions/etape-07/`.

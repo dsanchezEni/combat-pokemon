@@ -1,0 +1,232 @@
+= Étape 5 — Le moteur de combat tour par tour
+:toc: left
+
+Niveau : Bac+2 / Bac+4 — Durée indicative : 2h
+
+== Objectifs pédagogiques
+
+* Créer un **module de logique** séparé (`js/combat.js`) : règles du jeu = fonctions pures.
+* Calculer des dégâts à partir des données de l'API (stats + types + aléatoire).
+* Animer l'interface : barres de PV en CSS, `setTimeout` pour le tour adverse.
+* Gérer l'activation/désactivation d'un bouton pendant un tour.
+
+== Notions du cours mobilisées
+
+Fonctions pures → `Math.random()` → `Math.max`/`Math.round` → `find` sur un tableau → `setTimeout` → `style.width` → `classList` pour les couleurs → `scrollIntoView`.
+
+== Règles du jeu (simplifiées pour le TP)
+
+* Les **PV de départ** d'un combattant = sa statistique `hp` de l'API.
+* À chaque clic sur « Attaquer ! », votre Pokémon attaque, puis l'adversaire riposte automatiquement 800 ms plus tard.
+* Formule des dégâts :
+
+----
+dégâts = max(1, arrondi( (attaque / défense) × 10 × multiplicateurType × aléatoire ))
+----
+
+* `attaque` = `stats.atk` de l'attaquant, `défense` = `stats.def` du défenseur.
+* `multiplicateurType` se lit dans le tableau `resistances` du défenseur : si le type de l'attaquant y figure, on prend son `multiplier` (`2` = super efficace, `0.5` = peu efficace, `0` = immunisé), sinon `1`.
+* `aléatoire` est un nombre entre `0.85` et `1` (`0.85 + Math.random() * 0.15`).
+
+== Énoncé pas à pas
+
+=== 1. Le module de combat : `js/combat.js`
+
+[source,javascript]
+----
+// ================= Moteur de combat =================
+
+/** Crée l'état d'un combattant à partir d'un Pokémon de l'API. */
+function creerCombattant(pokemon) {
+  return {
+    pokemon,
+    pv: pokemon.stats.hp,      // les PV de départ = la stat "hp"
+    pvMax: pokemon.stats.hp,
+  };
+}
+
+/** Multiplicateur de type lu dans les résistances du défenseur. */
+function multiplicateurType(attaquant, defenseur) {
+  const typeAttaque = attaquant.pokemon.types[0].name;
+  const resistance = (defenseur.pokemon.resistances ?? []).find(
+    (r) => r.name === typeAttaque
+  );
+  return resistance ? resistance.multiplier : 1;
+}
+
+/** Calcule les dégâts d'une attaque (formule simplifiée du TP). */
+function calculerDegats(attaquant, defenseur) {
+  const attaque = attaquant.pokemon.stats.atk;
+  const defense = defenseur.pokemon.stats.def || 1; // évite la division par 0
+  const type = multiplicateurType(attaquant, defenseur);
+  const aleatoire = 0.85 + Math.random() * 0.15;
+  return Math.max(1, Math.round((attaque / defense) * 10 * type * aleatoire));
+}
+
+/** Applique une attaque : retire les PV et retourne un message. */
+function attaquer(attaquant, defenseur) {
+  const degats = calculerDegats(attaquant, defenseur);
+  defenseur.pv = Math.max(0, defenseur.pv - degats);
+
+  const type = multiplicateurType(attaquant, defenseur);
+  let message = `${attaquant.pokemon.name.fr} attaque ${defenseur.pokemon.name.fr} et inflige ${degats} dégâts !`;
+  if (type > 1) message += " C'est super efficace !";
+  if (type < 1 && type > 0) message += " Ce n'est pas très efficace...";
+  if (defenseur.pv === 0) message += ` ${defenseur.pokemon.name.fr} est K.O. !`;
+  return message;
+}
+----
+
+Remarques :
+
+* `??` est l'opérateur de **nullish coalescing** : `(defenseur.pokemon.resistances ?? [])` vaut `resistances` s'il existe, sinon un tableau vide (évite une erreur si le champ manque).
+* `Array.find(...)` renvoie le **premier** élément qui satisfait la condition, ou `undefined`.
+* `Math.max(0, pv - degats)` évite d'avoir des PV négatifs.
+
+=== 2. La section combat dans `index.html`
+
+Ajoutez (après `#arene`) :
+
+[source,html]
+----
+    <section id="combat" hidden>
+      <h2>Combat !</h2>
+      <div class="combattants">
+        <div class="combattant" id="combat-joueur"></div>
+        <div class="vs">VS</div>
+        <div class="combattant" id="combat-adversaire"></div>
+      </div>
+      <button id="bouton-attaquer">Attaquer !</button>
+    </section>
+----
+
+Et ajoutez `<script src="js/combat.js"></script>` avant `main.js`.
+
+=== 3. Affichage des combattants avec barres de PV (`js/ui.js`)
+
+`remplirCombattant(slot, combattant)` construit image + nom + **barre de PV** :
+
+[source,html]
+----
+<div class="barre-pv"><div class="barre-remplissage pv-haut"></div></div>
+<p class="texte-pv">PV : 35 / 35</p>
+----
+
+[source,javascript]
+----
+function mettreAJourPv(slot, combattant) {
+  const pourcentage = (combattant.pv / combattant.pvMax) * 100;
+  const remplissage = slot.querySelector('.barre-remplissage');
+  remplissage.style.width = `${pourcentage}%`;   // anime la barre (transition CSS)
+
+  remplissage.classList.remove('pv-haut', 'pv-moyen', 'pv-bas');
+  if (pourcentage > 50) remplissage.classList.add('pv-haut');      // vert
+  else if (pourcentage > 25) remplissage.classList.add('pv-moyen'); // orange
+  else remplissage.classList.add('pv-bas');                          // rouge
+
+  slot.querySelector('.texte-pv').textContent =
+    `PV : ${combattant.pv} / ${combattant.pvMax}`;
+}
+----
+
+Le CSS associé (dans `style.css`) :
+
+[source,css]
+----
+.barre-pv {
+  width: 100%; height: 14px;
+  background: #ddd; border-radius: 999px; overflow: hidden;
+}
+.barre-remplissage {
+  height: 100%; width: 100%;
+  transition: width 0.4s ease;   /* l'animation de la barre */
+}
+.pv-haut  { background: #4caf50; }
+.pv-moyen { background: #ff9800; }
+.pv-bas   { background: #f44336; }
+----
+
+`style.width = ...` modifie le style **en ligne** de l'élément ; la `transition` CSS anime le changement.
+
+=== 4. La boucle de jeu dans `js/main.js`
+
+[source,javascript]
+----
+let combat = null; // { joueur: {...}, adversaire: {...}, termine: false }
+
+function lancerCombat() {
+  combat = {
+    joueur: creerCombattant(combattants.joueur),
+    adversaire: creerCombattant(combattants.adversaire),
+    termine: false,
+  };
+
+  document.querySelector('#combat').hidden = false;
+  remplirCombattant(document.querySelector('#combat-joueur'), combat.joueur);
+  remplirCombattant(document.querySelector('#combat-adversaire'), combat.adversaire);
+  document.querySelector('#combat').scrollIntoView({ behavior: 'smooth' });
+}
+
+function tourDuJoueur() {
+  if (!combat || combat.termine) return;
+
+  const bouton = document.querySelector('#bouton-attaquer');
+  bouton.disabled = true;   // on bloque le bouton pendant le tour adverse
+
+  // Le joueur attaque
+  attaquer(combat.joueur, combat.adversaire);
+  mettreAJourPv(document.querySelector('#combat-adversaire'), combat.adversaire);
+
+  if (combat.adversaire.pv <= 0) {
+    combat.termine = true;
+    bouton.textContent = 'Combat terminé';
+    return;
+  }
+
+  // L'adversaire riposte après 800 ms
+  setTimeout(() => {
+    if (combat.termine) return;
+    attaquer(combat.adversaire, combat.joueur);
+    mettreAJourPv(document.querySelector('#combat-joueur'), combat.joueur);
+
+    if (combat.joueur.pv <= 0) {
+      combat.termine = true;
+      bouton.textContent = 'Combat terminé';
+    } else {
+      bouton.disabled = false; // au joueur de rejouer
+    }
+  }, 800);
+}
+----
+
+Et dans `main()` :
+
+[source,javascript]
+----
+  document.querySelector('#bouton-combat').addEventListener('click', lancerCombat);
+  document.querySelector('#bouton-attaquer').addEventListener('click', tourDuJoueur);
+----
+
+`setTimeout(fonction, 800)` exécute la fonction **une seule fois** après 800 ms. C'est le tour de l'IA (très simple ici : toujours la même attaque).
+
+== Résultat attendu
+
+Après « Lancer le combat ! », la section combat s'affiche avec les deux Pokémon et leurs barres de PV pleines. Chaque clic sur « Attaquer ! » fait baisser la barre adverse, puis 800 ms plus tard la vôtre. Le bouton est grisé pendant la riposte.
+
+== Questions de compréhension
+
+1. Pourquoi `defenseur.pokemon.stats.def || 1` plutôt que `defenseur.pokemon.stats.def` seul ?
+2. Que fait `Math.random()` ? Pourquoi multiplie-t-on par `0.15` puis ajoute-t-on `0.85` ?
+3. Pourquoi désactive-t-on le bouton pendant la riposte de l'adversaire ?
+4. Si les deux Pokémon ont 0 PV en même temps, qui gagne dans notre code ? (Indice : regardez l'ordre des `if`.)
+
+== Pour aller plus loin (Bac+4)
+
+* Faites attaquer **en premier** le Pokémon le plus rapide (`stats.vit`) : le tour adverse n'est alors pas toujours après le vôtre.
+* Ajoutez une animation CSS « secousse » sur le Pokémon touché (classe `.touche` retirée/re-ajoutée, voir étape 6).
+* Plusieurs attaques au choix (boutons « Charge » avec dégâts faibles mais sûrs, « Éclair » forts mais aléatoires).
+* Faites un **match nul** explicite si les deux tombent K.O. simultanément.
+
+== Code complet
+
+Voir `solutions/etape-05/`.

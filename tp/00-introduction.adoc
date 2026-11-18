@@ -1,0 +1,139 @@
+= TP fil rouge — Combat Pokémon en HTML / CSS / JavaScript
+:toc: left
+:toc-title: Sommaire
+:icons: font
+
+== Présentation du projet
+
+Au fil de ce TP, vous allez construire **pas à pas** un jeu de combat de Pokémon qui tourne dans le navigateur, uniquement en HTML, CSS et JavaScript « vanilla » (sans framework).
+
+Les données des Pokémon (noms, images, types, statistiques) proviennent de l'API publique et gratuite https://tyradex.app/docs[API Tyradex], une API Pokémon en français.
+
+.Le jeu final ressemblera à ceci
+----
+1. Une liste de Pokémon (génération 1) affichée sous forme de cartes,
+   avec recherche par nom et filtre par type.
+2. Un clic sur une carte ouvre la fiche détaillée du Pokémon.
+3. On choisit deux Pokémon : le vôtre et celui de l'adversaire.
+4. Un combat se déroule tour par tour : barres de PV, dégâts calculés
+   à partir des statistiques et des types, journal des actions, écran de
+   victoire/défaite et possibilité de rejouer.
+----
+
+== Public et prérequis
+
+* Niveau : étudiants en Bac+2 et Bac+4 informatique.
+* Prérequis : bases de HTML et CSS, notions de JavaScript (variables, fonctions, tableaux, objets).
+* Ce TP est conçu comme un **fil rouge** qui accompagne un cours sur :
+  la manipulation du DOM, les événements, et les appels d'API avec `fetch`.
+
+== Outils nécessaires
+
+* Un éditeur de code : https://code.visualstudio.com/[Visual Studio Code] recommandé.
+* L'extension **Live Server** de VS Code (bouton « Go Live » en bas à droite).
+  Elle lance un petit serveur local : indispensable pour que `fetch` fonctionne
+  correctement dans tous les navigateurs.
+* Un navigateur récent (Chrome, Edge ou Firefox) avec les outils de développement
+  ouverts (`F12` puis onglet **Console** et **Network**).
+
+== Structure du projet
+
+Créez un dossier `combat-pokemon` avec cette arborescence :
+
+----
+combat-pokemon/
+├── index.html
+├── css/
+│   └── style.css
+└── js/
+    ├── api.js        (appels à l'API Tyradex)
+    ├── ui.js         (fabrique les éléments HTML)
+    ├── combat.js     (logique du combat)
+    └── main.js       (point d'entrée, branche les événements)
+----
+
+Chaque étape du TP fait évoluer ces fichiers. Les corrections complètes et
+cumulées de chaque étape sont disponibles dans le dossier `solutions/etape-XX/`
+du dépôt.
+
+== Travail demandé à chaque étape
+
+Pour chaque étape :
+
+1. Lisez l'énoncé en entier avant de coder.
+2. Écrivez le code demandé dans vos fichiers.
+3. Testez dans le navigateur (Live Server) et observez la console (`F12`).
+4. Répondez aux questions de compréhension.
+5. Faites les exercices « Pour aller plus loin » si vous avancez vite.
+
+== Politique d'utilisation de l'API Tyradex
+
+L'API est gratuite et sans clé, mais elle demande de :
+
+* mettre les données en **cache** pour limiter le nombre de requêtes (étape 7) ;
+* créditer la source dans votre page (nous affichons un lien « Données fournies par l'API Tyradex » dans le pied de page) ;
+* ne pas faire un usage commercial des données.
+
+La fiche détaillée des endpoints utilisés est dans
+`tp/ressources/reference-api-tyradex.adoc`.
+
+== Étape 0 — Mise en route (30 min)
+
+Avant de coder quoi que ce soit, vérifiez que votre environnement fonctionne :
+
+1. Créez les dossiers et fichiers vides de la structure ci-dessus.
+2. Dans `index.html`, écrivez une page minimale :
+
+[source,html]
+----
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Combat Pokémon</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h1>Combat Pokémon</h1>
+  <p>Bienvenue dans le TP !</p>
+  <script src="js/main.js"></script>
+</body>
+</html>
+----
+
+3. Dans `js/main.js`, écrivez :
+
+[source,javascript]
+----
+console.log('Le fichier main.js est bien chargé !');
+----
+
+4. Dans `css/style.css`, appliquez un style minimal :
+
+[source,css]
+----
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f4f8;
+}
+h1 {
+  color: #e3350d;
+}
+----
+
+5. Lancez Live Server (clic droit sur `index.html` → « Open with Live Server »,
+   ou bouton « Go Live »), ouvrez la page, puis `F12` → Console.
+
+.Checklist de validation
+* [ ] La page s'affiche avec le titre rouge sur fond gris clair.
+* [ ] Le message apparaît dans la console.
+
+.Questions de compréhension
+1. Pourquoi faut-il lancer un serveur local (Live Server) plutôt qu'ouvrir le fichier `index.html` en double-cliquant dessus ?
+2. À quoi sert l'onglet « Network » des outils de développement ?
+
+== Passage à l'étape 1
+
+Quand votre page de base s'affiche correctement, ouvrez
+`tp/01-premier-appel-api.adoc` : vous y ferez votre premier appel à l'API
+Tyradex avec `fetch`.

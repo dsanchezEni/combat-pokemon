@@ -1,0 +1,91 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f2f4f8;
+  color: #222;
+}
+
+header {
+  background-color: #e3350d;
+  color: #fff;
+  padding: 16px 24px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+.credit {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+
+.credit a {
+  color: #ffd23f;
+}
+
+main {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+#chargement {
+  font-style: italic;
+  color: #666;
+}
+
+/* Grille de cartes */
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.carte {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.carte img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.carte .numero {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.carte .nom {
+  margin: 4px 0;
+  font-size: 1.05rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.types {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+
+.types li {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e3350d;
+  color: #fff;
+}

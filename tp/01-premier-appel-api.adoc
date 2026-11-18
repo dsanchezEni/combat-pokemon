@@ -1,0 +1,192 @@
+= Étape 1 — Premier appel à l'API avec `fetch`
+:toc: left
+
+Niveau : Bac+2 — Durée indicative : 1h30
+
+== Objectifs pédagogiques
+
+* Comprendre ce qu'est une API REST et lire sa documentation.
+* Découvrir `fetch`, les **Promise**, `async` / `await` et la méthode `.json()`.
+* Afficher des données reçues du réseau dans la page avec le DOM.
+* Gérer les erreurs réseau avec `try` / `catch`.
+
+== Notions du cours mobilisées
+
+`fetch()` → Promise → `await` → `response.json()` → parcours d'un tableau (`for...of`) → `document.querySelector`, `document.createElement`, `appendChild`, `textContent`.
+
+== Énoncé pas à pas
+
+=== 1. Lire la documentation de l'API
+
+Consultez la fiche `tp/ressources/reference-api-tyradex.adoc`.
+Pour cette étape, nous utilisons l'endpoint qui renvoie les **151 Pokémon de la génération 1** :
+
+----
+GET https://tyradex.app/api/v1/gen/1/pokemon
+----
+
+Ouvrez cette URL directement dans un onglet du navigateur pour observer le JSON renvoyé. Repérez les champs qui nous intéressent pour l'instant : `pokedex_id` et `name.fr`.
+
+=== 2. Créer le fichier `js/api.js`
+
+Ce fichier contiendra **toutes les fonctions qui parlent à l'API**. C'est une bonne habitude : séparer « récupérer les données » de « les afficher ».
+
+[source,javascript]
+----
+// Adresse de base de l'API Tyradex (version 1)
+const API_BASE = 'https://tyradex.app/api/v1';
+
+/**
+ * Récupère tous les Pokémon de la génération 1.
+ * @returns {Promise<Array>} la liste des Pokémon
+ */
+async function getPokemonsGeneration1() {
+  const reponse = await fetch(`${API_BASE}/gen/1/pokemon`);
+  const donnees = await reponse.json();
+  return donnees;
+}
+----
+
+Explication ligne par ligne :
+
+* `async function` déclare une fonction **asynchrone** : à l'intérieur, on pourra utiliser `await`.
+* `fetch(url)` envoie la requête HTTP et renvoie une Promise résolue quand le serveur répond.
+* `await` « met en pause » la fonction jusqu'à ce que la Promise soit tenue, puis donne le résultat.
+* `reponse.json()` transforme le corps de la réponse (du texte JSON) en objet JavaScript ; c'est aussi une Promise, d'où le second `await`.
+* Les `//` et le bloc `/** ... */` sont des **commentaires** : ils servent à documenter le code (ici, la JSDoc avec `@returns` décrit ce que retourne la fonction).
+
+=== 3. Compléter `index.html`
+
+[source,html]
+----
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combat Pokémon - Étape 1</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Combat Pokémon</h1>
+    <p class="credit">Données fournies par l'API
+      <a href="https://tyradex.app" target="_blank" rel="noopener">Tyradex</a>
+    </p>
+  </header>
+
+  <main>
+    <h2>Pokédex de la génération 1</h2>
+    <p id="chargement">Chargement des Pokémon en cours...</p>
+    <ul id="liste-pokemon"></ul>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+----
+
+Remarques :
+
+* `<p id="chargement">` affichera l'état du chargement (ou l'erreur).
+* `<ul id="liste-pokemon">` recevra un `<li>` par Pokémon.
+* Les deux `<script>` sont placés **à la fin du `<body>`** : le DOM est ainsi
+  entièrement construit quand le JS s'exécute, et `document.querySelector` fonctionne.
+  L'ordre compte : `api.js` avant `main.js`, car `main.js` appelle `getPokemonsGeneration1`.
+
+=== 4. Écrire `js/main.js`
+
+[source,javascript]
+----
+async function main() {
+  // 1. On récupère les éléments HTML dans lesquels on va écrire
+  const chargement = document.querySelector('#chargement');
+  const liste = document.querySelector('#liste-pokemon');
+
+  try {
+    // 2. On appelle l'API
+    const pokemons = await getPokemonsGeneration1();
+
+    // 3. On met à jour la page
+    chargement.textContent = `${pokemons.length} Pokémon chargés !`;
+
+    // 4. Pour chaque Pokémon, on crée un <li> dans la liste
+    for (const pokemon of pokemons) {
+      const li = document.createElement('li');
+      li.textContent = `#${pokemon.pokedex_id} - ${pokemon.name.fr}`;
+      liste.appendChild(li);
+    }
+  } catch (erreur) {
+    chargement.textContent = "Impossible de charger les Pokémon. Vérifiez votre connexion.";
+    console.error(erreur);
+  }
+}
+
+main();
+----
+
+Notions du DOM utilisées ici :
+
+* `document.querySelector('#chargement')` sélectionne l'élément dont l'`id` est `chargement` (le `#` désigne un id en CSS).
+* `document.createElement('li')` crée un élément HTML **en mémoire** (il n'est pas encore dans la page).
+* `li.textContent = ...` définit le texte de l'élément. Ici on utilise un **template literal** (chaîne entre backticks `` ` ``) : `${...}` insère la valeur d'une variable dans la chaîne.
+* `liste.appendChild(li)` ajoute le `<li>` à la fin de la `<ul>` : c'est ce qui l'insère réellement dans la page.
+* `try` / `catch` : si `fetch` échoue (pas de réseau, API indisponible), le `await` lève une erreur et on exécute le bloc `catch` au lieu de planter.
+
+=== 5. Un peu de CSS (`css/style.css`)
+
+[source,css]
+----
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f2f4f8;
+  color: #222;
+}
+
+header {
+  background-color: #e3350d;
+  color: #fff;
+  padding: 16px 24px;
+}
+
+main {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+#liste-pokemon {
+  columns: 3; /* affichage sur 3 colonnes */
+  padding-left: 20px;
+}
+----
+
+== Résultat attendu
+
+Une page avec un bandeau rouge « Combat Pokémon », le texte « 151 Pokémon chargés ! », puis la liste `#1 - Bulbizarre` … `#151 - Mew` sur trois colonnes.
+
+== Vérifications dans les outils de développement
+
+1. Onglet **Network** : rechargez la page (`F5`), cliquez sur la requête `pokemon`, observez l'onglet **Response** (le JSON brut).
+2. Onglet **Console** : exécutez `pokemons.length` — la variable n'existe plus (elle était locale à `main`). Exécutez plutôt `document.querySelectorAll('#liste-pokemon li').length` : doit afficher `151`.
+
+== Questions de compréhension
+
+1. Que se passe-t-il si on oublie le `await` devant `fetch(...)` ? (Indice : affichez `reponse` dans la console.)
+2. Pourquoi `reponse.json()` renvoie-t-il une Promise ?
+3. À quoi sert `try` / `catch` ici ? Que se passerait-il sans ?
+4. Quelle différence entre `textContent` et `innerHTML` ?
+
+== Pour aller plus loin (Bac+4)
+
+* Ajoutez un paramètre à `getPokemonsGeneration1(numeroGeneration)` pour charger n'importe quelle génération (`/gen/{n}/pokemon`).
+* Affichez dans la console le temps de chargement : `console.time('api')` avant le `fetch`, `console.timeEnd('api')` après.
+* Utilisez `reponse.ok` pour détecter une erreur HTTP avant même d'appeler `.json()` (anticipe l'étape 7).
+
+== Code complet
+
+Voir `solutions/etape-01/`.
