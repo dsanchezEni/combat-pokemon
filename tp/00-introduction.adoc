@@ -30,11 +30,43 @@ Les données des Pokémon (noms, images, types, statistiques) proviennent de l'A
 == Outils nécessaires
 
 * Un éditeur de code : https://code.visualstudio.com/[Visual Studio Code] recommandé.
-* L'extension **Live Server** de VS Code (bouton « Go Live » en bas à droite).
-  Elle lance un petit serveur local : indispensable pour que `fetch` fonctionne
-  correctement dans tous les navigateurs.
+* Un **serveur local** pour ouvrir la page. Trois possibilités :
+  1. L'extension **Live Server** de VS Code : clic droit sur `index.html` →
+     « Open with Live Server » (ou bouton « Go Live » en bas à droite).
+  2. **WAMP** (si votre dossier projet est dans `C:\wamp64\www`, comme ici) :
+     démarrez WAMP, puis ouvrez `http://localhost/combat-pokemon/solutions/etape-01/`.
+  3. En ligne de commande, dans le dossier du projet : `npx serve` ou
+     `python -m http.server 8000`, puis ouvrez `http://localhost:8000`.
 * Un navigateur récent (Chrome, Edge ou Firefox) avec les outils de développement
   ouverts (`F12` puis onglet **Console** et **Network**).
+
+.Pourquoi jamais de double-clic sur index.html ?
+====
+Ouvrir le fichier en `file://` (double-clic) provoque deux blocages :
+
+1. Les **modules ES6** (`<script type="module" src="...">`) sont refusés par le
+   navigateur en `file://` (politique CORS) : le code ne s'exécute même pas.
+2. Les requêtes `fetch` vers une API externe (`https://tyradex.app/...`) partent
+   avec une origine `null` et sont très souvent bloquées par le navigateur.
+
+Résultat : la page affiche « Impossible de charger les Pokémon ». Pour se protéger,
+les solutions du dépôt affichent un **bandeau rouge** quand elles détectent
+`location.protocol === 'file:'` :
+
+[source,html]
+----
+<script>
+  if (location.protocol === 'file:') {
+    const bandeau = document.createElement('div');
+    bandeau.style.cssText = 'background:#c62828;color:#fff;padding:10px 16px;font-family:Arial,sans-serif;';
+    bandeau.textContent = "Page ouverte en file:// : utilisez un serveur local (Live Server, WAMP, npx serve).";
+    document.body.prepend(bandeau);
+  }
+</script>
+----
+====
+
+Ajoutez ce garde-fou en haut du `<body>` de votre propre `index.html` dès l'étape 0.
 
 == Structure du projet
 
@@ -129,7 +161,7 @@ h1 {
 * [ ] Le message apparaît dans la console.
 
 .Questions de compréhension
-1. Pourquoi faut-il lancer un serveur local (Live Server) plutôt qu'ouvrir le fichier `index.html` en double-cliquant dessus ?
+1. Pourquoi faut-il lancer un serveur local plutôt qu'ouvrir le fichier `index.html` en double-cliquant dessus ? (Réponse dans l'encadré ci-dessus : modules ES6 + `fetch` cross-origin bloqués en `file://`.)
 2. À quoi sert l'onglet « Network » des outils de développement ?
 
 == Passage à l'étape 1

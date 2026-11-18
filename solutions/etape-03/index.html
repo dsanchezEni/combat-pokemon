@@ -7,6 +7,16 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <script>
+    // Garde-fou : en file://, le navigateur bloque les modules ES6 et souvent fetch vers l'API.
+    // Il faut ouvrir la page via un serveur local (Live Server, WAMP, npx serve...).
+    if (location.protocol === 'file:') {
+      const bandeau = document.createElement('div');
+      bandeau.style.cssText = 'background:#c62828;color:#fff;padding:10px 16px;font-family:Arial,sans-serif;font-size:0.9rem;';
+      bandeau.textContent = "Page ouverte en file:// : relancez-la via un serveur local (bouton Go Live de Live Server, http://localhost/combat-pokemon/... avec WAMP, ou 'npx serve') sinon les appels a l'API sont bloques par le navigateur.";
+      document.body.prepend(bandeau);
+    }
+  </script>
   <header>
     <h1>Combat Pokémon</h1>
     <p class="credit">Données fournies par l'API <a href="https://tyradex.app" target="_blank" rel="noopener">Tyradex</a></p>
