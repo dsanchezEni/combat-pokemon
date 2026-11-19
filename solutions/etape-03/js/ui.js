@@ -76,20 +76,20 @@ function creerFicheDetaillee(pokemon) {
   fiche.innerHTML = `
     <h2>N°${pokemon.pokedex_id} ${pokemon.name.fr}</h2>
     <img src="${pokemon.sprites.regular}" alt="Sprite de ${pokemon.name.fr}">
-    <p class="categorie">${pokemon.categorie ?? ''}</p>
+    <p class="categorie">${pokemon.category ?? ''}</p>
     <ul class="types">
       ${pokemon.types.map(t => `<li>${t.name}</li>`).join('')}
     </ul>
     <p>Taille : ${pokemon.height ?? '?'} — Poids : ${pokemon.weight ?? '?'}</p>
-    <p>Talent : ${pokemon.talent ?? '?'}</p>
+    <p>Talents : ${(pokemon.talents ?? []).map(t => t.name).join(', ')}</p>
     <h3>Statistiques</h3>
     <ul class="stats">
       <li><span>PV</span><span>${pokemon.stats.hp}</span></li>
       <li><span>Attaque</span><span>${pokemon.stats.atk}</span></li>
       <li><span>Défense</span><span>${pokemon.stats.def}</span></li>
       <li><span>Vitesse</span><span>${pokemon.stats.vit}</span></li>
-      <li><span>Attaque spéciale</span><span>${pokemon.stats.atkspe}</span></li>
-      <li><span>Défense spéciale</span><span>${pokemon.stats.defspe}</span></li>
+      <li><span>Attaque spéciale</span><span>${pokemon.stats.spe_atk}</span></li>
+      <li><span>Défense spéciale</span><span>${pokemon.stats.spe_def}</span></li>
     </ul>
   `;
   return fiche;

@@ -7,7 +7,7 @@ const CLE_CACHE = 'pokedex-gen1-v1';
 /**
  * Récupère tous les Pokémon de la génération 1, avec mise en cache
  * dans localStorage (recommandé par la politique d'utilisation de Tyradex).
- * GET https://tyradex.app/api/v1/gen/1/pokemon
+ * GET https://tyradex.app/api/v1/gen/1
  * @param {boolean} forcerRechargement true pour ignorer le cache
  * @returns {Promise<Array>} la liste des Pokémon
  */
@@ -20,7 +20,7 @@ export async function getPokemonsGeneration1(forcerRechargement = false) {
     }
   }
 
-  const reponse = await fetch(`${API_BASE}/gen/1/pokemon`);
+  const reponse = await fetch(`${API_BASE}/gen/1`);
   // fetch ne lève pas d'erreur sur un 404/500 : il faut vérifier reponse.ok
   if (!reponse.ok) {
     throw new Error(`Erreur HTTP ${reponse.status} en appelant l'API Tyradex`);

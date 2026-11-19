@@ -22,10 +22,29 @@ Consultez la fiche `tp/ressources/reference-api-tyradex.adoc`.
 Pour cette étape, nous utilisons l'endpoint qui renvoie les **151 Pokémon de la génération 1** :
 
 ----
-GET https://tyradex.app/api/v1/gen/1/pokemon
+GET https://tyradex.app/api/v1/gen/1
 ----
 
 Ouvrez cette URL directement dans un onglet du navigateur pour observer le JSON renvoyé. Repérez les champs qui nous intéressent pour l'instant : `pokedex_id` et `name.fr`.
+
+.Piège fréquent : toujours tester l'URL de l'API dans le navigateur
+====
+L'endpoint `/api/v1/gen/1/pokemon` renvoie un **404** (page HTML d'erreur) :
+le bon endpoint est `/api/v1/gen/1`. Une erreur 404 fait planter `reponse.json()`
+car le corps n'est pas du JSON, ce qui déclenche le `catch` (« Impossible de charger
+les Pokémon ») alors que la connexion Internet fonctionne très bien.
+
+Réflexe : collez l'URL dans un onglet, ou allez dans `F12` → Network → Response.
+====
+
+.Déploiement sur GitHub Pages
+====
+Le TP fonctionne tel quel sur GitHub Pages (`https://votre-compte.github.io/...`) :
+l'API Tyradex autorise toutes les origines (CORS `*`), donc `fetch` marche depuis
+n'importe quel site en `https://`. Attention toutefois à ne PAS utiliser
+`tyradex.vercel.app` (déploiement Vercel souvent en pause, erreur 402) : utilisez
+uniquement `tyradex.app`.
+====
 
 === 2. Créer le fichier `js/api.js`
 
@@ -41,7 +60,7 @@ const API_BASE = 'https://tyradex.app/api/v1';
  * @returns {Promise<Array>} la liste des Pokémon
  */
 async function getPokemonsGeneration1() {
-  const reponse = await fetch(`${API_BASE}/gen/1/pokemon`);
+  const reponse = await fetch(`${API_BASE}/gen/1`);
   const donnees = await reponse.json();
   return donnees;
 }
@@ -183,7 +202,7 @@ Une page avec un bandeau rouge « Combat Pokémon », le texte « 151 Pokémon c
 
 == Pour aller plus loin (Bac+4)
 
-* Ajoutez un paramètre à `getPokemonsGeneration1(numeroGeneration)` pour charger n'importe quelle génération (`/gen/{n}/pokemon`).
+* Ajoutez un paramètre à `getPokemonsGeneration1(numeroGeneration)` pour charger n'importe quelle génération (`/gen/{n}`).
 * Affichez dans la console le temps de chargement : `console.time('api')` avant le `fetch`, `console.timeEnd('api')` après.
 * Utilisez `reponse.ok` pour détecter une erreur HTTP avant même d'appeler `.json()` (anticipe l'étape 7).
 

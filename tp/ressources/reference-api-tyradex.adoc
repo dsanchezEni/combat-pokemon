@@ -10,7 +10,9 @@ https://tyradex.app/api/v1
 ----
 
 Tous les endpoints du TP commencent par cette URL. L'API est en **GET**,
-gratuite, sans clé d'authentification, et renvoie du **JSON**.
+gratuite, sans clé d'authentification, renvoie du **JSON**, et autorise toutes
+les origines (CORS `*`), donc `fetch` fonctionne depuis n'importe quel site
+servi en `http://localhost` ou `https://` (GitHub Pages compris).
 
 == Endpoints utilisés dans le TP
 
@@ -18,21 +20,25 @@ gratuite, sans clé d'authentification, et renvoie du **JSON**.
 |===
 | Endpoint | Description | Exemple
 
-| `GET /gen/1/pokemon`
-| Liste des 151 Pokémon de la génération 1 (objets complets).
-| `https://tyradex.app/api/v1/gen/1/pokemon`
+| `GET /gen/1`
+| Liste des 151 Pokémon de la génération 1 (objets **complets** : stats, résistances...).
+| `https://tyradex.app/api/v1/gen/1`
 
 | `GET /pokemon/{id}`
-| Fiche détaillée d'un Pokémon (par numéro Pokédex ou par nom).
+| Fiche détaillée d'un Pokémon (par numéro Pokédex ou par nom anglais).
 | `https://tyradex.app/api/v1/pokemon/25`
 
+| `GET /pokemon`
+| Liste de **tous** les Pokémon (plusieurs milliers : lourd, à éviter dans le TP).
+| `https://tyradex.app/api/v1/pokemon`
+
 | `GET /gen`
-| Liste des générations.
+| Liste des générations (avec bornes `from`/`to` du Pokédex national).
 | `https://tyradex.app/api/v1/gen`
 
-| `GET /gen/{n}/pokemon`
-| Pokémon d'une génération donnée.
-| `https://tyradex.app/api/v1/gen/4/pokemon`
+| `GET /gen/{n}`
+| Pokémon d'une génération donnée (n = 1 à 9).
+| `https://tyradex.app/api/v1/gen/4`
 
 | `GET /types`
 | Liste de tous les types.
@@ -43,39 +49,43 @@ gratuite, sans clé d'authentification, et renvoie du **JSON**.
 | `https://tyradex.app/api/v1/types/electrik`
 |===
 
-== Champs d'un Pokémon utilisés dans le TP
+== Champs d'un Pokémon (vérifiés sur l'API)
 
-Exemple pour Pikachu (`GET /api/v1/pokemon/25`), extrait :
+Exemple pour Pikachu (`GET /api/v1/pokemon/25`) :
 
 [source,json]
 ----
 {
   "pokedex_id": 25,
-  "name": { "fr": "Pikachu", "en": "Pikachu", "jp": "ピカチュウ" },
   "generation": 1,
-  "categorie": "Pokémon Souris",
-  "talent": "Statik",
-  "talents": [
-    { "name": "Statik", "tc": true },
-    { "name": "Paratonnerre", "tc": false }
-  ],
+  "category": "Pokémon Souris",
+  "name": { "fr": "Pikachu", "en": "Pikachu", "jp": "ピカチュウ" },
+  "sprites": {
+    "regular": "https://raw.githubusercontent.com/Yarkis01/TyraDex/images/sprites/25/regular.png",
+    "shiny": "https://raw.githubusercontent.com/Yarkis01/TyraDex/images/sprites/25/shiny.png"
+  },
   "types": [
-    { "name": "Électrik", "image": "https://.../electrik.svg" }
+    { "name": "Électrik", "image": "https://.../types/electrik.png" }
+  ],
+  "talents": [
+    { "name": "Statik", "tc": false },
+    { "name": "Paratonnerre", "tc": true }
   ],
   "stats": {
-    "hp": 35, "atk": 55, "def": 40,
-    "vit": 90, "atkspe": 50, "defspe": 50
+    "hp": 45, "atk": 80, "def": 50,
+    "spe_atk": 75, "spe_def": 60, "vit": 120
   },
   "resistances": [
-    { "name": "Acier", "multiplier": 0.5 },
-    { "name": "Vol", "multiplier": 2 }
+    { "name": "Électrik", "multiplier": 0.5 },
+    { "name": "Sol", "multiplier": 2 }
   ],
-  "sprites": {
-    "regular": "https://.../25.png",
-    "shiny": "https://.../25_s.png"
-  },
+  "evolution": { "pre": [...], "next": [...], "mega": null },
   "height": "0,4 m",
-  "weight": "6,0 kg"
+  "weight": "6,0 kg",
+  "egg_groups": ["Terrestre", "Féerique"],
+  "sexe": { "male": 50.0, "female": 50.0 },
+  "catch_rate": 190,
+  "level_100": 1000000
 }
 ----
 
@@ -85,13 +95,17 @@ Exemple pour Pikachu (`GET /api/v1/pokemon/25`), extrait :
 
 | `pokedex_id` | Numéro affiché sur la carte ; sert aussi à appeler `/pokemon/{id}`.
 | `name.fr` | Nom français affiché partout.
-| `sprites.regular` | URL de l'image du Pokémon.
+| `sprites.regular` | URL de l'image du Pokémon (hébergée sur GitHub, accessible partout).
 | `types[].name` | Badges de type + filtre par type + multiplicateur de dégâts.
+| `category` | La « catégorie » du Pokémon (ex : « Pokémon Souris »).
+| `talents[]` | Tableau `{ name, tc }` (`tc` = talent caché).
 | `stats.hp` | PV de départ du combattant.
 | `stats.atk` / `stats.def` | Calcul des dégâts.
-| `stats.vit` | Pour aller plus loin : déterminer qui attaque en premier.
+| `stats.spe_atk` / `stats.spe_def` | Attaque/défense spéciales (affichage fiche).
+| `stats.vit` | Vitesse — pour aller plus loin : qui attaque en premier.
 | `resistances[]` | Chaque entrée `{ name, multiplier }` indique l'efficacité d'un type
   contre ce Pokémon (`0` = immunisé, `0.5` = résistant, `1` = neutre, `2` = faible).
+| `height` / `weight` | Taille et poids affichés dans la fiche.
 |===
 
 == Tester un endpoint dans le navigateur
@@ -104,7 +118,7 @@ C'est le moyen le plus rapide de comprendre la structure des données.
 
 [source,javascript]
 ----
-const reponse = await fetch('https://tyradex.app/api/v1/gen/1/pokemon');
+const reponse = await fetch('https://tyradex.app/api/v1/gen/1');
 const pokemons = await reponse.json(); // transformation du JSON en objet JS
 ----
 
@@ -113,7 +127,9 @@ Points importants :
 * `fetch` renvoie une **Promise** : on attend la réponse avec `await`.
 * `reponse.json()` renvoie aussi une Promise : on l'attend aussi avec `await`.
 * `fetch` ne signale pas une erreur HTTP (404, 500...) : il faut tester
-  `reponse.ok` (voir étape 7).
+  `reponse.ok` (voir étape 7). Exemple : `/api/v1/gen/1/pokemon` renvoie un 404
+  (page HTML d'erreur), ce qui fait planter `.json()` — l'endpoint correct est
+  `/api/v1/gen/1`.
 
 == Bonnes pratiques exigées par Tyradex
 

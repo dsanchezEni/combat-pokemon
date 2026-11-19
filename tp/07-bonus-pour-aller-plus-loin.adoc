@@ -51,7 +51,7 @@ export async function getPokemonsGeneration1(forcerRechargement = false) {
     if (cache) return JSON.parse(cache);   // données déjà vues : on ne rappelle pas l'API
   }
 
-  const reponse = await fetch(`${API_BASE}/gen/1/pokemon`);
+  const reponse = await fetch(`${API_BASE}/gen/1`);
   if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
   const donnees = await reponse.json();
 
